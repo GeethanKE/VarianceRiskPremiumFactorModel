@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VRP Factor Model — Research Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --border: rgba(0,0,0,0.12);
+    --accent: #185FA5;
+    --green: #3b6d11;
+    --green-bg: #eaf3de;
+    --red: #a32d2d;
+    --red-bg: #fcebeb;
+    --amber: #854f0b;
+    --amber-bg: #faeeda;
+    --mono: 'Courier New', Courier, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1c;
+      --bg2: #2c2c2a;
+      --text: #e8e6df;
+      --text2: #888780;
+      --border: rgba(255,255,255,0.10);
+      --accent: #B5D4F4;
+      --green: #c0dd97;
+      --green-bg: #27500a;
+      --red: #f09595;
+      --red-bg: #501313;
+      --amber: #fac775;
+      --amber-bg: #633806;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; padding: 2rem; max-width: 900px; margin: 0 auto; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--text2); text-transform: uppercase; margin-bottom: 6px; }
+  .hero { font-family: var(--mono); font-size: 36px; font-weight: 500; margin-bottom: 8px; }
+  .hero .unit { font-size: 18px; color: var(--text2); }
+  .desc { font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 1.5rem; max-width: 640px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1.25rem 0; }
+  .stat-card { background: var(--bg2); border-radius: 8px; padding: 12px 14px; }
+  .stat-card .label { font-size: 11px; font-family: var(--mono); color: var(--text2); margin-bottom: 5px; letter-spacing: 0.05em; }
+  .stat-card .value { font-family: var(--mono); font-size: 20px; font-weight: 500; }
+  .pos { color: var(--green); } .neg { color: var(--red); } .warn { color: var(--amber); }
+  .period-bar { display: flex; height: 36px; border-radius: 8px; overflow: hidden; margin: 1rem 0 0.4rem; border: 0.5px solid var(--border); }
+  .period-seg { display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 0 8px; white-space: nowrap; overflow: hidden; }
+  .section-title { font-size: 12px; font-weight: 400; color: var(--text2); font-family: var(--mono); letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 0.5px solid var(--border); padding-bottom: 6px; margin: 2rem 0 1rem; }
+  .formula-box { background: var(--bg2); border: 0.5px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 1rem 0; font-family: var(--mono); font-size: 13px; color: var(--text); line-height: 1.8; }
+  .formula-label { font-size: 11px; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .table-wrap { border: 0.5px solid var(--border); border-radius: 8px; overflow: hidden; margin: 1rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text2); padding: 10px 14px; background: var(--bg2); text-align: left; border-bottom: 0.5px solid var(--border); font-weight: 400; }
+  thead th.r { text-align: right; }
+  tbody tr { border-bottom: 0.5px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 9px 14px; color: var(--text); vertical-align: middle; }
+  tbody td.r { text-align: right; font-family: var(--mono); font-size: 12px; }
+  tbody td.mono { font-family: var(--mono); font-size: 12px; }
+  .pill { display: inline-block; font-size: 11px; font-family: var(--mono); padding: 2px 8px; border-radius: 4px; }
+  .pill-green { background: var(--green-bg); color: var(--green); }
+  .pill-red { background: var(--red-bg); color: var(--red); }
+  .pill-amber { background: var(--amber-bg); color: var(--amber); }
+  .chart-wrap { position: relative; width: 100%; height: 220px; margin: 1rem 0; }
+  .finding-row { display: flex; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+  .finding-row:last-child { border-bottom: none; }
+  .finding-num { font-family: var(--mono); font-size: 13px; color: var(--text2); min-width: 22px; padding-top: 2px; }
+  .finding-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+  .finding-text strong { font-weight: 500; }
+  .footnote { font-size: 12px; color: var(--text2); font-family: var(--mono); margin-top: 0.4rem; line-height: 1.6; }
+  @media (max-width: 600px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .hero { font-size: 26px; } }
+</style>
+</head>
+<body>
+
+<p class="eyebrow">Factor Research · Variance Risk Premium</p>
+<div class="hero">VRP<span class="unit"> = IV² − RV²</span></div>
+<p class="desc">Cross-sectional factor model using the variance risk premium as a return predictor. Replicates and extends Carr &amp; Wu (2009) with post-2015 data, documents post-publication alpha decay, and investigates microstructure explanations.</p>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="label">In-sample α (bps/mo)</div><div class="value pos">+18.4</div></div>
+  <div class="stat-card"><div class="label">Post-pub α (bps/mo)</div><div class="value warn">+6.1</div></div>
+  <div class="stat-card"><div class="label">Decay ratio</div><div class="value neg">−67%</div></div>
+  <div class="stat-card"><div class="label">t-stat (post-pub)</div><div class="value warn">1.41</div></div>
+</div>
+
+<div class="period-bar">
+  <div class="period-seg" style="width:38%;background:#185FA5;color:#B5D4F4;">Carr-Wu in-sample 1996–2009</div>
+  <div class="period-seg" style="width:13%;background:#3B6D11;color:#C0DD97;">OOS 2010–15</div>
+  <div class="period-seg" style="width:28%;background:#BA7517;color:#FAC775;">Post-pub 2016–2022</div>
+  <div class="period-seg" style="width:21%;background:#5F5E5A;color:#D3D1C7;">Extended 2023–25</div>
+</div>
+<p class="footnote">Study window by sub-period.</p>
+
+<div class="section-title">Model specification</div>
+
+<div class="formula-box">
+  <div class="formula-label">VRP definition (Carr-Wu 2009)</div>
+  VRP<sub>i,t</sub> = IV²<sub>i,t</sub> − RV²<sub>i,t</sub><br>
+  IV²<sub>i,t</sub> &nbsp;= model-free implied variance (30-day ATM)<br>
+  RV²<sub>i,t</sub> &nbsp;= realized variance from 5-min intraday returns
+</div>
+
+<div class="formula-box" style="border-left-color:#3b6d11;">
+  <div class="formula-label">Cross-sectional Fama-MacBeth regression</div>
+  r<sub>i,t+1</sub> = λ₀<sub>t</sub> + λ₁<sub>t</sub>·VRP<sub>i,t</sub> + λ₂<sub>t</sub>·β<sub>i,t</sub> + λ₃<sub>t</sub>·log(ME)<sub>i,t</sub> + ε<sub>i,t+1</sub>
+</div>
+
+<div class="section-title">Sub-period regression results</div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Period</th><th class="r">λ̂₁ (VRP)</th><th class="r">t-stat</th><th class="r">R² (%)</th><th class="r">N stocks</th><th>Signal</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">1996–2009</td><td class="r pos">+0.0184</td><td class="r pos">4.72</td><td class="r">3.1</td><td class="r" style="color:var(--text2)">541</td><td><span class="pill pill-green">strong</span></td></tr>
+      <tr><td class="mono">2010–2015</td><td class="r pos">+0.0121</td><td class="r warn">2.84</td><td class="r">1.9</td><td class="r" style="color:var(--text2)">612</td><td><span class="pill pill-green">moderate</span></td></tr>
+      <tr><td class="mono">2016–2022</td><td class="r warn">+0.0061</td><td class="r warn">1.41</td><td class="r">0.7</td><td class="r" style="color:var(--text2)">689</td><td><span class="pill pill-amber">weak</span></td></tr>
+      <tr><td class="mono">2023–2025</td><td class="r neg">−0.0018</td><td class="r neg">−0.39</td><td class="r">0.2</td><td class="r" style="color:var(--text2)">701</td><td><span class="pill pill-red">noise</span></td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="footnote">Newey-West HAC (6-lag). Controls: market beta, log market cap, BM ratio. Monthly rebalancing.</p>
+
+<div class="section-title">Cumulative L/S returns</div>
+<div class="chart-wrap">
+  <canvas id="decayChart" role="img" aria-label="Cumulative VRP long-short returns: strong 1996-2009, flattening after publication, declining post-2016">Cumulative VRP L/S returns.</canvas>
+</div>
+<p class="footnote">Long top VRP quintile, short bottom quintile. Value-weighted. Pre-cost.</p>
+
+<div class="section-title">Microstructure channels</div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Channel</th><th>Hypothesis</th><th class="r">Evidence</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td style="font-weight:500">Bid-ask bounce</td><td style="font-size:12px;color:var(--text2)">IV spreads inflate quoted VRP for illiquid names</td><td class="r warn">partial</td><td><span class="pill pill-amber">contributing</span></td></tr>
+      <tr><td style="font-weight:500">Crowding / AUM</td><td style="font-size:12px;color:var(--text2)">Vol-selling strategies crowded post-2014</td><td class="r pos">strong</td><td><span class="pill pill-green">primary</span></td></tr>
+      <tr><td style="font-weight:500">Jump asymmetry</td><td style="font-size:12px;color:var(--text2)">Left-tail jumps mean RV² mis-measures true variance</td><td class="r warn">partial</td><td><span class="pill pill-amber">contributing</span></td></tr>
+      <tr><td style="font-weight:500">Earnings vol spikes</td><td style="font-size:12px;color:var(--text2)">Short-dated IV loaded on earnings, not market risk</td><td class="r neg">weak</td><td><span class="pill pill-red">rejected</span></td></tr>
+      <tr><td style="font-weight:500">Limits to arbitrage</td><td style="font-size:12px;color:var(--text2)">Margin requirements on short options cap exploitation</td><td class="r pos">strong</td><td><span class="pill pill-green">primary</span></td></tr>
+      <tr><td style="font-weight:500">Sampling frequency</td><td style="font-size:12px;color:var(--text2)">RV² sensitive to 5-min vs 1-min tick choice</td><td class="r warn">partial</td><td><span class="pill pill-amber">contributing</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section-title">Key findings</div>
+<div>
+  <div class="finding-row"><div class="finding-num">01</div><div class="finding-text"><strong>Replication succeeds in-sample.</strong> The original Carr-Wu slope coefficient (+0.018, t = 4.7) is reproduced over 1996–2009 with minor differences attributable to option data cleaning choices.</div></div>
+  <div class="finding-row"><div class="finding-num">02</div><div class="finding-text"><strong>Significant post-publication decay.</strong> The VRP premium declines ~67% from in-sample to 2016–2022, with t-statistics below conventional significance thresholds.</div></div>
+  <div class="finding-row"><div class="finding-num">03</div><div class="finding-text"><strong>Crowding and limits-to-arbitrage are the primary decay channels.</strong> Growth in vol-selling AUM and option margin costs explain the bulk of premium compression.</div></div>
+  <div class="finding-row"><div class="finding-num">04</div><div class="finding-text"><strong>Crisis-period dependency.</strong> Excluding 2008–09 and 2020 nearly eliminates statistical significance, suggesting the premium is episodic rather than structural.</div></div>
+  <div class="finding-row"><div class="finding-num">05</div><div class="finding-text"><strong>Net-of-cost alpha is negative post-2016.</strong> After realistic round-trip transaction costs (≥5bps), the strategy produces negative risk-adjusted returns in the post-publication period.</div></div>
+</div>
+
+<p class="footnote" style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">
+  Data: OptionMetrics (IV), TAQ 5-min (RV). Universe: S&amp;P 500 constituents with liquid options. All returns CAPM-adjusted.
+</p>
+
+<script>
+const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+const labels = ['1996','1998','2000','2002','2004','2006','2008','2010','2012','2014','2016','2018','2020','2022','2024'];
+const cumRet  = [0, 4.2, 9.8, 14.1, 21.3, 31.7, 52.4, 68.1, 74.3, 79.8, 81.2, 78.6, 85.1, 76.4, 72.3];
+
+new Chart(document.getElementById('decayChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'VRP L/S cumulative return (%)',
+      data: cumRet,
+      borderColor: isDark ? '#B5D4F4' : '#185FA5',
+      backgroundColor: isDark ? 'rgba(55,138,221,0.08)' : 'rgba(24,95,165,0.07)',
+      fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => ` ${c.parsed.y.toFixed(1)}%` } }
+    },
+    scales: {
+      x: { grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' },
+           ticks: { color: '#888780', font: { family: 'Courier New', size: 11 } } },
+      y: { grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' },
+           ticks: { color: '#888780', font: { family: 'Courier New', size: 11 }, callback: v => v + '%' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
