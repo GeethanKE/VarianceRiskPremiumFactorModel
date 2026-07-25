@@ -1,50 +1,59 @@
-# VRP Factor Model
+# ⚡ VRP Factor Model — Real-Time Tick Stream (Alpaca)
 
-Replication of **Carr & Wu (2009)** with **live market data**.
+Live tick-by-tick variance risk premium model using Alpaca's free WebSocket API.
 
-## How to run
+## Setup (one time)
 
-1. Clone this repo
-2. Open Terminal in the repo folder
-3. Run:
+1. Sign up free at [alpaca.markets](https://alpaca.markets) → Paper Trading → Generate API Keys
+2. Open `.env` in this folder and paste your keys:
 
-```bash
-pip3 install jupyter
-jupyter notebook
+```
+ALPACA_API_KEY=your_key_here
+ALPACA_SECRET_KEY=your_secret_here
 ```
 
-4. Click **VRP_Factor_Model.ipynb**
-5. Click **Kernel → Restart & Run All**
+3. In Terminal:
 
-That's it. The notebook installs its own dependencies (Cell 1) and pulls
-live S&P 500 + VIX data automatically (Cell 2). No separate data files needed.
+```bash
+pip3 install jupyterlab
+jupyter lab
+```
+
+4. Open **VRP_Live_Alpaca.ipynb** → **Run → Run All Cells**
 
 ## What it does
 
 | Cell | What happens |
 |------|-------------|
-| 1 | Installs `yfinance`, `pandas`, `numpy`, `matplotlib`, `statsmodels` |
-| 2 | Downloads 10 years of daily prices for 50 S&P 500 stocks + VIX |
-| 3 | Computes IV², RV², and VRP for each stock each month |
-| 4 | Runs Fama-MacBeth cross-sectional regressions by sub-period |
-| 5 | Plots rolling 24-month λ₁ to visualise post-publication decay |
-| 6 | Constructs VRP quintile portfolios, reports Sharpe / drawdown |
-| 7 | Microstructure tests: RV frequency, crisis dependency, current snapshot |
-| 8 | Saves summary dashboard as `vrp_dashboard.png` |
+| 1 | Installs `alpaca-py`, `pandas`, `numpy`, `matplotlib` |
+| 2 | Loads keys from `.env`, connects to Alpaca |
+| 3 | Seeds 90 days of historical bars, builds VRP functions |
+| 4 | Opens WebSocket tick stream + live refreshing dashboard |
 
 ## Formula
 
 ```
-VRP_{i,t} = IV²_{i,t} − RV²_{i,t}
+VRP = IV² − RV²
 
-r_{i,t+1} = λ₀ + λ₁·VRP_{i,t} + λ₂·β_{i,t} + λ₃·log(ME)_{i,t} + ε
+IV²  = Parkinson (1980) high-low estimator — no options data needed
+         IV² = mean[(ln(H/L))² / 4ln2] × 252
+
+RV²  = rolling 21-bar realised variance from tick prices
+         RV² = Σ(log return)² × 252/21
 ```
 
-## Data sources
+## Signals
 
-- **Prices & returns**: Yahoo Finance via `yfinance` (free, real-time)
-- **Implied variance proxy**: VIX² scaled by stock beta
-- **Realised variance**: rolling 21-day sum of squared daily log returns
+| VRP | Signal |
+|-----|--------|
+| > +0.01 | 🟢 LONG |
+| < −0.01 | 🔴 SHORT |
+| between | ⚪ FLAT |
+
+## Security
+
+`.env` is in `.gitignore` — your keys will never be pushed to GitHub.
+Never commit your keys or paste them in public.
 
 ## License
 MIT
